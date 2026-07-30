@@ -2,57 +2,70 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>管理员后台 - 备份与删除管理</title>
+    <title>后台管理</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #334155; margin: 0; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
-        h2, h3 { color: #0f172a; margin-top: 0; }
-        label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
-        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        textarea { height: 200px; resize: vertical; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-save { background: #10b981; color: white; }
-        .btn-reset { background: #64748b; color: white; }
-        .btn-danger { background: #ef4444; color: white; font-size: 13px; padding: 6px 12px; }
-        .tip { font-size: 12px; color: #64748b; margin-top: -15px; margin-bottom: 20px; }
-        .badge { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+        :root {
+            --bg-color: #fafaf9;
+            --text-main: #292524;
+            --text-sub: #78716c;
+            --border-color: #e7e5e4;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 60px 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 640px; }
+        .back { display: inline-block; margin-bottom: 40px; color: var(--text-sub); text-decoration: none; font-size: 13px; }
+        .back:hover { color: var(--text-main); }
+        h1, h2 { font-size: 18px; font-weight: 400; letter-spacing: 1px; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
         
-        /* 列表管理区域 */
-        .entry-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; background: #f8fafc; }
-        .entry-info { overflow: hidden; margin-right: 15px; }
-        .entry-title { font-weight: bold; color: #1e293b; font-size: 15px; }
-        .entry-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .section-box { background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 24px; margin-bottom: 30px; }
+        label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 8px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 14px; background: #fff; color: var(--text-main); }
+        textarea { height: 180px; resize: vertical; }
+        
+        .btn-group { display: flex; gap: 10px; }
+        button { padding: 8px 16px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; background: #fff; color: var(--text-main); transition: background 0.2s; }
+        button:hover { background: #f5f5f4; }
+        .btn-save { background: var(--text-main); color: #fff; border-color: var(--text-main); }
+        .btn-save:hover { background: #44403c; }
+        .btn-danger { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+        .btn-danger:hover { background: #fee2e2; }
+
+        .entry-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0efee; }
+        .entry-item:last-child { border-bottom: none; }
+        .entry-title { font-size: 14px; color: var(--text-main); margin-bottom: 4px; }
+        .entry-meta { font-size: 12px; color: #a8a29e; }
+        .manage-list-box { font-size: 14px; color: var(--text-sub); }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
-        <a href="books.html" class="back">← 返回前台书架</a>
-        <h2>⚙️ 管理员发布后台 <span class="badge">云端管理</span></h2>
+        <a href="books.html" class="back">← 返回书架</a>
         
-        <label>选择归属的书籍分类：</label>
-        <select id="book-category">
-            <option value="mystic">🔮 自我觉察与神秘学日记</option>
-            <option value="daily">📝 日常生活手帐</option>
-        </select>
+        <div class="section-box">
+            <h1>⚙️ 发布新内容</h1>
+            
+            <label>分类</label>
+            <select id="book-category">
+                <option value="mystic">🔮 自我觉察与神秘学</option>
+                <option value="daily">📝 日常生活手帐</option>
+            </select>
 
-        <label>日记标题：</label>
-        <input type="text" id="entry-title" placeholder="输入日记标题...">
+            <label>标题</label>
+            <input type="text" id="entry-title" placeholder="请输入标题...">
 
-        <label>正文内容：</label>
-        <textarea id="entry-content" placeholder="在这里写下你的内容..."></textarea>
-        
-        <div class="btn-group">
-            <button class="btn-save" onclick="publishToCloud()">发布到 GitHub 云端</button>
-            <button class="btn-reset" onclick="resetToken()">重置 Token</button>
+            <label>正文</label>
+            <textarea id="entry-content" placeholder="请输入正文内容..."></textarea>
+            
+            <div class="btn-group">
+                <button class="btn-save" onclick="publishToCloud()">发布到云端</button>
+                <button onclick="resetToken()">重置 Token</button>
+            </div>
         </div>
-    </div>
 
-    <div class="container">
-        <h3>🗑️ 已发布日记列表（可直接删除）</h3>
-        <div id="manage-list">正在从云端加载日记列表...</div>
+        <div class="section-box">
+            <h2>🗑️ 记录管理</h2>
+            <div id="manage-list" class="manage-list-box">正在加载列表...</div>
+        </div>
     </div>
 
     <script>
@@ -76,12 +89,11 @@
             alert('已清除保存的 Token。');
         }
 
-        // 页面加载时，自动拉取云端数据并渲染出管理列表
         async function loadEntriesForManage() {
             const token = getGithubToken();
             const listContainer = document.getElementById('manage-list');
             if (!token) {
-                listContainer.innerHTML = '未检测到 Token，请先在上方尝试发布一次以输入 Token。';
+                listContainer.innerHTML = '未检测到 Token，请先尝试发布一次。';
                 return;
             }
 
@@ -93,34 +105,32 @@
 
                 if (res.ok) {
                     const fileData = await res.json();
-                    window.currentSha = fileData.sha; // 记录文件的 sha 用于后续更新
+                    window.currentSha = fileData.sha;
                     const decodedContent = decodeURIComponent(escape(atob(fileData.content)));
                     window.allEntries = JSON.parse(decodedContent);
 
                     if (window.allEntries.length === 0) {
-                        listContainer.innerHTML = '目前云端还没有任何日记。';
+                        listContainer.innerHTML = '暂无任何记录。';
                         return;
                     }
 
-                    // 渲染列表
                     listContainer.innerHTML = window.allEntries.map((item, index) => `
                         <div class="entry-item">
-                            <div class="entry-info">
+                            <div>
                                 <div class="entry-title">${item.title}</div>
-                                <div class="entry-meta">${item.category === 'mystic' ? '🔮 神秘学' : '📝 手帐'} | ${item.date}</div>
+                                <div class="entry-meta">${item.category === 'mystic' ? '神秘学' : '手帐'} · ${item.date}</div>
                             </div>
                             <button class="btn-danger" onclick="deleteEntry(${index})">删除</button>
                         </div>
                     `).join('');
                 } else {
-                    listContainer.innerHTML = '加载云端列表失败，请检查 Token。';
+                    listContainer.innerHTML = '暂无云端数据文件（发布第一篇后即可在此管理）。';
                 }
             } catch (e) {
-                listContainer.innerHTML = '加载出错: ' + e.message;
+                listContainer.innerHTML = '加载失败';
             }
         }
 
-        // 发布新日记
         async function publishToCloud() {
             const token = getGithubToken();
             if (!token) return;
@@ -130,34 +140,36 @@
             const content = document.getElementById('entry-content').value.trim();
             
             if(!title || !content) {
-                alert('标题和内容不能为空哦！');
+                alert('标题和内容不能为空');
                 return;
             }
 
-            alert('正在提交到 GitHub 云端...');
+            // 记录精确到分钟的当下时间
             const now = new Date();
-            const dateStr = now.toISOString().split('T')[0];
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day} ${hours}:${minutes}`;
+
             const newEntry = { category, title, content, date: dateStr };
 
-            // 确保有最新列表
             let entries = window.allEntries || [];
             entries.unshift(newEntry);
 
-            await saveEntriesToCloud(entries, 'Add new diary entry');
+            await saveEntriesToCloud(entries, 'Add new entry with precise time');
         }
 
-        // 删除某一篇日记
         async function deleteEntry(index) {
-            if (!confirm('确定要永久删除这篇日记吗？')) return;
+            if (!confirm('确定要删除这条记录吗？')) return;
 
             let entries = window.allEntries || [];
-            entries.splice(index, 1); // 从数组中移除这一篇
+            entries.splice(index, 1);
 
-            alert('正在从云端删除...');
-            await saveEntriesToCloud(entries, 'Delete diary entry');
+            await saveEntriesToCloud(entries, 'Delete entry');
         }
 
-        // 公共的云端保存函数
         async function saveEntriesToCloud(entries, message) {
             const token = getGithubToken();
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
@@ -179,10 +191,10 @@
                 });
 
                 if (putRes.ok) {
-                    alert('🎉 操作成功！已同步更新云端。');
+                    alert('操作成功');
                     document.getElementById('entry-title').value = '';
                     document.getElementById('entry-content').value = '';
-                    loadEntriesForManage(); // 重新加载列表
+                    loadEntriesForManage();
                 } else {
                     const err = await putRes.json();
                     alert('操作失败: ' + err.message);
@@ -192,7 +204,6 @@
             }
         }
 
-        // 页面打开时自动加载
         window.onload = loadEntriesForManage;
     </script>
 </body>
