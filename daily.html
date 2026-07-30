@@ -4,59 +4,148 @@
     <meta charset="UTF-8">
     <title>日常生活手帐</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #334155; margin: 0; padding: 40px; }
-        .container { max-width: 700px; margin: 0 auto; }
-        .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
-        .entry { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #6366f1; }
-        .meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
-        .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
-        .content { line-height: 1.6; color: #475569; white-space: pre-wrap; }
-        .empty { text-align: center; color: #94a3b8; margin-top: 40px; }
+        :root {
+            --bg-color: #fafaf9;
+            --text-main: #292524;
+            --text-sub: #78716c;
+            --border-color: #e7e5e4;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 60px 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 640px; }
+        .back { display: inline-block; margin-bottom: 40px; color: var(--text-sub); text-decoration: none; font-size: 13px; }
+        .back:hover { color: var(--text-main); }
+        h1 { font-size: 18px; font-weight: 400; letter-spacing: 1px; margin-bottom: 40px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+        
+        .index-item { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: color 0.2s; }
+        .index-item:hover .index-title { color: #000; text-decoration: underline; }
+        .index-title { font-size: 15px; font-weight: 500; color: var(--text-main); }
+        .index-date { font-size: 12px; color: #a8a29e; }
+
+        .reader-view { display: none; }
+        .reader-meta { font-size: 12px; color: #a8a29e; margin-bottom: 12px; }
+        .reader-title { font-size: 18px; font-weight: 500; color: var(--text-main); margin-bottom: 24px; }
+        .reader-content { font-size: 14px; line-height: 1.8; color: #44403c; white-space: pre-wrap; margin-bottom: 40px; }
+        
+        .pagination { display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 20px; }
+        .page-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; font-size: 13px; padding: 0; }
+        .page-btn:hover { color: var(--text-main); }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .empty { text-align: center; color: var(--text-sub); margin-top: 60px; font-size: 14px; }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
-        <a href="books.html" class="back">← 返回书架</a>
-        <h1>📝 日常生活手帐</h1>
-        <div id="list-container">正在从云端加载日记...</div>
+        <a href="books.html" class="back" id="back-link">← 返回书架</a>
+        
+        <div id="listView">
+            <h1>📝 日常生活手帐</h1>
+            <div id="index-container">正在加载...</div>
+        </div>
+
+        <div id="readerView" class="reader-view">
+            <div class="reader-meta" id="reader-meta"></div>
+            <div class="reader-title" id="reader-title"></div>
+            <div class="reader-content" id="reader-content"></div>
+            <div class="pagination">
+                <button class="page-btn" id="prevBtn" onclick="navigate(-1)">← 上一篇</button>
+                <button class="page-btn" id="nextBtn" onclick="navigate(1)">下一篇 →</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const GITHUB_USER = "averyshenmia";
         const GITHUB_REPO = "diarywebsite.github.io";
         const path = "data.json";
+        
+        let dailyEntries = [];
+        let currentIndex = 0;
 
-        async function loadCloudEntries() {
-            const container = document.getElementById('list-container');
+        async function init() {
             try {
                 const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${path}?t=${Date.now()}`;
                 const res = await fetch(url);
-                
-                if (!res.ok) {
-                    container.innerHTML = '<div class="empty">暂无云端日记，快去管理员后台写一篇吧！</div>';
-                    return;
-                }
-
+                if (!res.ok) throw new Error();
                 const entries = await res.json();
-                const dailyEntries = entries.filter(item => item.category === 'daily');
+                dailyEntries = entries.filter(item => item.category === 'daily');
 
-                if (dailyEntries.length === 0) {
-                    container.innerHTML = '<div class="empty">该分类下暂无日记。</div>';
-                } else {
-                    container.innerHTML = dailyEntries.map(item => `
-                        <div class="entry">
-                            <div class="meta">${item.date}</div>
-                            <div class="title">${item.title}</div>
-                            <div class="content">${item.content}</div>
-                        </div>
-                    `).join('');
-                }
+                renderIndex();
+                checkUrlHash();
             } catch (e) {
-                container.innerHTML = '<div class="empty">加载云端数据失败，请检查网络。</div>';
+                document.getElementById('index-container').innerHTML = '<div class="empty">暂无内容或加载失败</div>';
             }
         }
-        loadCloudEntries();
+
+        function renderIndex() {
+            const container = document.getElementById('index-container');
+            if (dailyEntries.length === 0) {
+                container.innerHTML = '<div class="empty">暂无内容</div>';
+                return;
+            }
+            container.innerHTML = dailyEntries.map((item, idx) => `
+                <div class="index-item" onclick="openReader(${idx})">
+                    <span class="index-title">${item.title}</span>
+                    <span class="index-date">${item.date}</span>
+                </div>
+            `).join('');
+        }
+
+        function openReader(idx) {
+            currentIndex = idx;
+            window.location.hash = `entry=${idx}`;
+            showReaderView();
+        }
+
+        function showReaderView() {
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('readerView').style.display = 'block';
+            
+            const item = dailyEntries[currentIndex];
+            document.getElementById('reader-meta').innerText = item.date;
+            document.getElementById('reader-title').innerText = item.title;
+            document.getElementById('reader-content').innerText = item.content;
+
+            document.getElementById('prevBtn').disabled = currentIndex <= 0;
+            document.getElementById('nextBtn').disabled = currentIndex >= dailyEntries.length - 1;
+            window.scrollTo(0, 0);
+        }
+
+        function showListView() {
+            document.getElementById('listView').style.display = 'block';
+            document.getElementById('readerView').style.display = 'none';
+            history.pushState("", document.title, window.location.pathname);
+        }
+
+        function navigate(direction) {
+            currentIndex += direction;
+            window.location.hash = `entry=${currentIndex}`;
+            showReaderView();
+        }
+
+        function checkUrlHash() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#entry=')) {
+                const idx = parseInt(hash.split('=')[1]);
+                if (!isNaN(idx) && idx >= 0 && idx < dailyEntries.length) {
+                    currentIndex = idx;
+                    showReaderView();
+                    return;
+                }
+            }
+            showListView();
+        }
+
+        document.getElementById('back-link').onclick = function(e) {
+            if (document.getElementById('readerView').style.display === 'block') {
+                e.preventDefault();
+                showListView();
+            }
+        };
+
+        window.onhashchange = checkUrlHash;
+        init();
     </script>
 </body>
 </html>
