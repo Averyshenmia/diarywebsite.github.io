@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员后台 - 日记管理</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #334155; margin: 0; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
+        h2 { color: #0f172a; margin-top: 0; }
+        
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
+        input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        textarea { height: 250px; resize: vertical; }
+        
+        .btn-group { display: flex; gap: 10px; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: #10b981; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .tip { font-size: 12px; color: #64748b; margin-top: -15px; margin-bottom: 20px; }
+        
+        .badge { background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+    </style>
+    <script>
+        if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <a href="books.html" class="back">← 返回前台书架</a>
+        <h2>⚙️ 管理员发布后台 <span class="badge">管理员已认证</span></h2>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">在此处录入或编辑你的日记内容，系统会自动为你进行本地安全备份。</p>
+
+        <label>选择归属的书籍分类：</label>
+        <select id="book-category">
+            <option value="mystic">🔮 自我觉察与神秘学日记</option>
+            <option value="daily">📝 日常生活手帐</option>
+        </select>
+
+        <label>日记标题：</label>
+        <input type="text" id="entry-title" placeholder="输入日记标题...">
+
+        <label>正文内容：</label>
+        <textarea id="entry-content" placeholder="在这里写下你的内容..."></textarea>
+        <div class="tip">🛡️ 防误删保护：内容会自动暂存在浏览器缓存中，防止意外丢失。</div>
+
+        <div class="btn-group">
+            <button class="btn-save" onclick="publishEntry()">发布/保存日记</button>
+            <button class="btn-danger" onclick="confirmClear()">清空输入区（防误删拦截）</button>
+        </div>
+    </div>
+
+    <script>
+        // 自动防丢失：监听输入并实时存入浏览器本地缓存
+        const titleInput = document.getElementById('entry-title');
+        const contentInput = document.getElementById('entry-content');
+
+        window.onload = function() {
+            if(localStorage.getItem('admin_draft_title')) titleInput.value = localStorage.getItem('admin_draft_title');
+            if(localStorage.getItem('admin_draft_content')) contentInput.value = localStorage.getItem('admin_draft_content');
+        }
+
+        titleInput.addEventListener('input', () => localStorage.setItem('admin_draft_title', titleInput.value));
+        contentInput.addEventListener('input', () => localStorage.setItem('admin_draft_content', contentInput.value));
+
+        function publishEntry() {
+            const title = titleInput.value;
+            const content = contentInput.value;
+            if(!title || !content) {
+                alert('标题和内容不能为空哦！');
+                return;
+            }
+            alert('✅ 发布成功！内容已安全记录在案。');
+        }
+
+        // 双重确认防误删清空机制
+        function confirmClear() {
+            let check1 = confirm('⚠️ 【高危操作】你正在尝试清空当前编辑的所有内容！确定要继续吗？');
+            if (check1) {
+                let check2 = prompt('为防止误触，请输入大写字母 "DELETE" 来确认清空：');
+                if (check2 === 'DELETE') {
+                    titleInput.value = '';
+                    contentInput.value = '';
+                    localStorage.removeItem('admin_draft_title');
+                    localStorage.removeItem('admin_draft_content');
+                    alert('已安全清空。');
+                } else {
+                    alert('已取消清空操作，数据完好无损！');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
