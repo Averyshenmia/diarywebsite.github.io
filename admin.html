@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>管理员后台 - 日记管理</title>
+    <title>管理员后台 - 动态 Token 云端同步</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #334155; margin: 0; padding: 40px; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -10,20 +10,20 @@
         h2 { color: #0f172a; margin-top: 0; }
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        textarea { height: 250px; resize: vertical; }
+        textarea { height: 220px; resize: vertical; }
         .btn-group { display: flex; gap: 10px; }
         button { padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #10b981; color: white; }
-        .btn-danger { background: #ef4444; color: white; }
+        .btn-reset { background: #64748b; color: white; }
         .tip { font-size: 12px; color: #64748b; margin-top: -15px; margin-bottom: 20px; }
-        .badge { background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+        .badge { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
         <a href="books.html" class="back">← 返回前台书架</a>
-        <h2>⚙️ 管理员发布后台 <span class="badge">已认证</span></h2>
+        <h2>⚙️ 管理员发布后台 <span class="badge">云端同步</span></h2>
         
         <label>选择归属的书籍分类：</label>
         <select id="book-category">
@@ -36,16 +36,43 @@
 
         <label>正文内容：</label>
         <textarea id="entry-content" placeholder="在这里写下你的内容..."></textarea>
-        <div class="tip">🛡️ 发布后将自动同步到对应的书本与时间轴页面。</div>
+        <div class="tip">☁️ 第一次发布时会弹出输入框让你粘贴 Token（只会问一次，之后会自动记住）。</div>
 
         <div class="btn-group">
-            <button class="btn-save" onclick="publishEntry()">发布并同步到网站</button>
-            <button class="btn-danger" onclick="confirmClear()">清空输入区</button>
+            <button class="btn-save" onclick="publishToCloud()">发布到 GitHub 云端</button>
+            <button class="btn-reset" onclick="resetToken()">重置/更换 Token</button>
         </div>
     </div>
 
     <script>
-        function publishEntry() {
+        const GITHUB_USER = "averyshenmia";       
+        const GITHUB_REPO = "diarywebsite.github.io"; 
+
+        // 获取或要求输入 Token
+        function getGithubToken() {
+            let token = localStorage.getItem('github_token');
+            if (!token) {
+                token = prompt("🔑 请粘贴你的 GitHub Token（仅需输入一次，会安全保存在你的浏览器中）：");
+                if (token) {
+                    localStorage.setItem('github_token', token.trim());
+                }
+            }
+            return token ? token.trim() : null;
+        }
+
+        // 重置 Token 按钮
+        function resetToken() {
+            localStorage.removeItem('github_token');
+            alert('已清除保存的 Token，下次发布时将重新询问。');
+        }
+
+        async function publishToCloud() {
+            const token = getGithubToken();
+            if (!token) {
+                alert('没有 Token 无法同步到云端哦！');
+                return;
+            }
+
             const category = document.getElementById('book-category').value;
             const title = document.getElementById('entry-title').value.trim();
             const content = document.getElementById('entry-content').value.trim();
@@ -55,33 +82,61 @@
                 return;
             }
 
-            // 获取当前日期
+            alert('正在提交到 GitHub 云端，请稍候...');
+
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
-
-            // 构造新日记对象
             const newEntry = { category, title, content, date: dateStr };
 
-            // 读取本地存储中的所有日记
-            let entries = JSON.parse(localStorage.getItem('my_diary_entries') || '[]');
-            
-            // 把新日记加到最前面（实现最新到最旧）
-            entries.unshift(newEntry);
-            
-            // 保存回本地存储
-            localStorage.setItem('my_diary_entries', JSON.stringify(entries));
+            const path = "data.json";
+            const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
 
-            alert('✅ 发布成功！已实时同步到对应书本中。');
-            
-            // 清空输入框
-            document.getElementById('entry-title').value = '';
-            document.getElementById('entry-content').value = '';
-        }
+            try {
+                let sha = null;
+                let existingEntries = [];
 
-        function confirmClear() {
-            if (confirm('确定要清空当前输入的内容吗？')) {
-                document.getElementById('entry-title').value = '';
-                document.getElementById('entry-content').value = '';
+                const getRes = await fetch(url, {
+                    headers: { "Authorization": `token ${token}` }
+                });
+
+                if (getRes.ok) {
+                    const fileData = await getRes.json();
+                    sha = fileData.sha;
+                    const decodedContent = decodeURIComponent(escape(atob(fileData.content)));
+                    existingEntries = JSON.parse(decodedContent);
+                }
+
+                existingEntries.unshift(newEntry);
+
+                const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(existingEntries, null, 2))));
+
+                const putRes = await fetch(url, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        message: "Add new diary entry via web admin",
+                        content: updatedContent,
+                        sha: sha
+                    })
+                });
+
+                if (putRes.ok) {
+                    alert('🎉 成功同步到 GitHub 云端！');
+                    document.getElementById('entry-title').value = '';
+                    document.getElementById('entry-content').value = '';
+                } else {
+                    const err = await putRes.json();
+                    alert('保存失败，可能 Token 不正确: ' + err.message);
+                    if(putRes.status === 401) {
+                        localStorage.removeItem('github_token'); // 鉴权失败自动清空错的token
+                    }
+                }
+
+            } catch (e) {
+                alert('发生错误，请检查网络: ' + e.message);
             }
         }
     </script>
