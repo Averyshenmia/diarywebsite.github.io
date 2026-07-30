@@ -2,63 +2,122 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>自我觉察与神秘学日记</title>
+    <title>自我觉察与神秘学</title>
     <style>
         :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-sub: #64748b;
-            --border-color: #e2e8f0;
-            --primary: #6366f1;
+            --bg-color: #fafaf9;
+            --text-main: #292524;
+            --text-sub: #78716c;
+            --border-color: #e7e5e4;
+            --hover-color: #f5f5f4;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 40px 20px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 800px; }
-        .back { display: inline-block; margin-bottom: 24px; color: var(--primary); text-decoration: none; font-size: 14px; font-weight: 500; }
-        .back:hover { text-decoration: underline; }
-        
-        h1 { font-size: 24px; font-weight: 600; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        
-        /* 目录卡片列表 */
-        .index-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px 24px; margin-bottom: 14px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .index-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99,102,241,0.08); }
-        .index-title { font-size: 16px; font-weight: 600; color: var(--text-main); }
-        .index-date { font-size: 13px; color: var(--text-sub); }
 
-        /* 正文阅读卡片视图 */
-        .reader-view { display: none; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .reader-meta { font-size: 13px; color: var(--text-sub); margin-bottom: 12px; }
-        .reader-title { font-size: 22px; font-weight: 600; color: var(--text-main); margin-bottom: 24px; }
-        .reader-content { font-size: 15px; line-height: 1.9; color: #334155; white-space: pre-wrap; margin-bottom: 40px; border-top: 1px solid var(--border-color); padding-top: 24px; }
-        
-        .pagination { display: flex; justify-content: space-between; border-top: 1px solid var(--border-color); padding-top: 20px; }
-        .page-btn { background: #f1f5f9; border: none; color: var(--text-main); cursor: pointer; font-size: 13px; padding: 10px 18px; border-radius: 8px; font-weight: 500; transition: background 0.2s; }
-        .page-btn:hover { background: #e2e8f0; }
-        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; background: #f8fafc; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 80px 40px; 
+            display: flex;
+            justify-content: center;
+        }
 
-        .empty { text-align: center; color: var(--text-sub); margin-top: 60px; font-size: 15px; background: var(--card-bg); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .container { 
+            width: 100%; 
+            max-width: 640px; 
+        }
+
+        /* 顶部导航栏 */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: baseline; 
+            margin-bottom: 40px; 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .back-link { 
+            font-size: 13px; 
+            color: var(--text-sub); 
+            text-decoration: none; 
+            transition: color 0.2s; 
+        }
+
+        .back-link:hover { 
+            color: var(--text-main); 
+        }
+
+        h1 { 
+            font-size: 18px; 
+            font-weight: 400; 
+            letter-spacing: 1px; 
+            margin: 0; 
+            color: var(--text-main);
+        }
+
+        /* 日记列表区 */
+        .entries-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .entry-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 28px;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #f0efee;
+            padding-bottom: 12px;
+        }
+
+        .entry-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .entry-date {
+            font-size: 12px;
+            color: #a8a29e;
+        }
+
+        .entry-content {
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-main);
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 0;
+        }
+
+        .loading, .empty {
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 14px;
+            padding: 40px 0;
+        }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
-        <a href="books.html" class="back" id="back-link">← 返回书架</a>
-        
-        <!-- 目录视图 -->
-        <div id="listView">
-            <h1>🔮 自我觉察与神秘学日记</h1>
-            <div id="index-container">正在加载...</div>
-        </div>
+        <header>
+            <h1>🔮 自我觉察与神秘学</h1>
+            <a href="books.html" class="back-link">← 返回书架</a>
+        </header>
 
-        <!-- 正文阅读视图 -->
-        <div id="readerView" class="reader-view">
-            <div class="reader-meta" id="reader-meta"></div>
-            <div class="reader-title" id="reader-title"></div>
-            <div class="reader-content" id="reader-content"></div>
-            <div class="pagination">
-                <button class="page-btn" id="prevBtn" onclick="navigate(-1)">← 上一篇</button>
-                <button class="page-btn" id="nextBtn" onclick="navigate(1)">下一篇 →</button>
-            </div>
+        <div id="entries-list" class="entries-container">
+            <div class="loading">正在加载内容...</div>
         </div>
     </div>
 
@@ -66,93 +125,41 @@
         const GITHUB_USER = "averyshenmia";
         const GITHUB_REPO = "diarywebsite.github.io";
         const path = "data.json";
-        
-        let mysticEntries = [];
-        let currentIndex = 0;
 
-        async function init() {
+        async function loadMysticEntries() {
+            const container = document.getElementById('entries-list');
             try {
-                const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${path}?t=${Date.now()}`;
+                const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${path}?t=` + new Date().getTime();
                 const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                const entries = await res.json();
-                mysticEntries = entries.filter(item => item.category === 'mystic');
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    // 筛选出 category 为 mystic 的内容
+                    const mysticData = data.filter(item => item.category === 'mystic');
 
-                renderIndex();
-                checkUrlHash();
-            } catch (e) {
-                document.getElementById('index-container').innerHTML = '<div class="empty">该分类下暂无日记。</div>';
-            }
-        }
+                    if (mysticData.length === 0) {
+                        container.innerHTML = '<div class="empty">暂无相关记录。</div>';
+                        return;
+                    }
 
-        function renderIndex() {
-            const container = document.getElementById('index-container');
-            if (mysticEntries.length === 0) {
-                container.innerHTML = '<div class="empty">该分类下暂无日记。</div>';
-                return;
-            }
-            container.innerHTML = mysticEntries.map((item, idx) => `
-                <div class="index-card" onclick="openReader(${idx})">
-                    <span class="index-title">${item.title}</span>
-                    <span class="index-date">${item.date}</span>
-                </div>
-            `).join('');
-        }
-
-        function openReader(idx) {
-            currentIndex = idx;
-            window.location.hash = `entry=${idx}`;
-            showReaderView();
-        }
-
-        function showReaderView() {
-            document.getElementById('listView').style.display = 'none';
-            document.getElementById('readerView').style.display = 'block';
-            
-            const item = mysticEntries[currentIndex];
-            document.getElementById('reader-meta').innerText = item.date;
-            document.getElementById('reader-title').innerText = item.title;
-            document.getElementById('reader-content').innerText = item.content;
-
-            document.getElementById('prevBtn').disabled = currentIndex <= 0;
-            document.getElementById('nextBtn').disabled = currentIndex >= mysticEntries.length - 1;
-            window.scrollTo(0, 0);
-        }
-
-        function showListView() {
-            document.getElementById('listView').style.display = 'block';
-            document.getElementById('readerView').style.display = 'none';
-            history.pushState("", document.title, window.location.pathname);
-        }
-
-        function navigate(direction) {
-            currentIndex += direction;
-            window.location.hash = `entry=${currentIndex}`;
-            showReaderView();
-        }
-
-        function checkUrlHash() {
-            const hash = window.location.hash;
-            if (hash.startsWith('#entry=')) {
-                const idx = parseInt(hash.split('=')[1]);
-                if (!isNaN(idx) && idx >= 0 && idx < mysticEntries.length) {
-                    currentIndex = idx;
-                    showReaderView();
-                    return;
+                    container.innerHTML = mysticData.map(item => `
+                        <div class="entry-card">
+                            <div class="entry-header">
+                                <h2 class="entry-title">${item.title}</h2>
+                                <span class="entry-date">${item.date}</span>
+                            </div>
+                            <div class="entry-content">${item.content}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="empty">暂无云端数据。</div>';
                 }
+            } catch (e) {
+                container.innerHTML = '<div class="empty">加载失败，请检查网络或稍后重试。</div>';
             }
-            showListView();
         }
 
-        document.getElementById('back-link').onclick = function(e) {
-            if (document.getElementById('readerView').style.display === 'block') {
-                e.preventDefault();
-                showListView();
-            }
-        };
-
-        window.onhashchange = checkUrlHash;
-        init();
+        window.onload = loadMysticEntries;
     </script>
 </body>
 </html>
