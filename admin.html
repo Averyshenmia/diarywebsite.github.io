@@ -2,28 +2,35 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>管理员后台 - 动态 Token 云端同步</title>
+    <title>管理员后台 - 备份与删除管理</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f1f5f9; color: #334155; margin: 0; padding: 40px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
         .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
-        h2 { color: #0f172a; margin-top: 0; }
+        h2, h3 { color: #0f172a; margin-top: 0; }
         label { display: block; font-weight: bold; margin-bottom: 8px; color: #475569; }
         input, select, textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        textarea { height: 220px; resize: vertical; }
-        .btn-group { display: flex; gap: 10px; }
-        button { padding: 12px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        textarea { height: 200px; resize: vertical; }
+        .btn-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #10b981; color: white; }
         .btn-reset { background: #64748b; color: white; }
+        .btn-danger { background: #ef4444; color: white; font-size: 13px; padding: 6px 12px; }
         .tip { font-size: 12px; color: #64748b; margin-top: -15px; margin-bottom: 20px; }
         .badge { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+        
+        /* 列表管理区域 */
+        .entry-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; background: #f8fafc; }
+        .entry-info { overflow: hidden; margin-right: 15px; }
+        .entry-title { font-weight: bold; color: #1e293b; font-size: 15px; }
+        .entry-meta { font-size: 12px; color: #94a3b8; margin-top: 4px; }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
         <a href="books.html" class="back">← 返回前台书架</a>
-        <h2>⚙️ 管理员发布后台 <span class="badge">云端同步</span></h2>
+        <h2>⚙️ 管理员发布后台 <span class="badge">云端管理</span></h2>
         
         <label>选择归属的书籍分类：</label>
         <select id="book-category">
@@ -36,23 +43,27 @@
 
         <label>正文内容：</label>
         <textarea id="entry-content" placeholder="在这里写下你的内容..."></textarea>
-        <div class="tip">☁️ 第一次发布时会弹出输入框让你粘贴 Token（只会问一次，之后会自动记住）。</div>
-
+        
         <div class="btn-group">
             <button class="btn-save" onclick="publishToCloud()">发布到 GitHub 云端</button>
-            <button class="btn-reset" onclick="resetToken()">重置/更换 Token</button>
+            <button class="btn-reset" onclick="resetToken()">重置 Token</button>
         </div>
+    </div>
+
+    <div class="container">
+        <h3>🗑️ 已发布日记列表（可直接删除）</h3>
+        <div id="manage-list">正在从云端加载日记列表...</div>
     </div>
 
     <script>
         const GITHUB_USER = "averyshenmia";       
         const GITHUB_REPO = "diarywebsite.github.io"; 
+        const path = "data.json";
 
-        // 获取或要求输入 Token
         function getGithubToken() {
             let token = localStorage.getItem('github_token');
             if (!token) {
-                token = prompt("🔑 请粘贴你的 GitHub Token（仅需输入一次，会安全保存在你的浏览器中）：");
+                token = prompt("🔑 请粘贴你的 GitHub Token（仅需输入一次）：");
                 if (token) {
                     localStorage.setItem('github_token', token.trim());
                 }
@@ -60,18 +71,59 @@
             return token ? token.trim() : null;
         }
 
-        // 重置 Token 按钮
         function resetToken() {
             localStorage.removeItem('github_token');
-            alert('已清除保存的 Token，下次发布时将重新询问。');
+            alert('已清除保存的 Token。');
         }
 
-        async function publishToCloud() {
+        // 页面加载时，自动拉取云端数据并渲染出管理列表
+        async function loadEntriesForManage() {
             const token = getGithubToken();
+            const listContainer = document.getElementById('manage-list');
             if (!token) {
-                alert('没有 Token 无法同步到云端哦！');
+                listContainer.innerHTML = '未检测到 Token，请先在上方尝试发布一次以输入 Token。';
                 return;
             }
+
+            try {
+                const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
+                const res = await fetch(url, {
+                    headers: { "Authorization": `token ${token}` }
+                });
+
+                if (res.ok) {
+                    const fileData = await res.json();
+                    window.currentSha = fileData.sha; // 记录文件的 sha 用于后续更新
+                    const decodedContent = decodeURIComponent(escape(atob(fileData.content)));
+                    window.allEntries = JSON.parse(decodedContent);
+
+                    if (window.allEntries.length === 0) {
+                        listContainer.innerHTML = '目前云端还没有任何日记。';
+                        return;
+                    }
+
+                    // 渲染列表
+                    listContainer.innerHTML = window.allEntries.map((item, index) => `
+                        <div class="entry-item">
+                            <div class="entry-info">
+                                <div class="entry-title">${item.title}</div>
+                                <div class="entry-meta">${item.category === 'mystic' ? '🔮 神秘学' : '📝 手帐'} | ${item.date}</div>
+                            </div>
+                            <button class="btn-danger" onclick="deleteEntry(${index})">删除</button>
+                        </div>
+                    `).join('');
+                } else {
+                    listContainer.innerHTML = '加载云端列表失败，请检查 Token。';
+                }
+            } catch (e) {
+                listContainer.innerHTML = '加载出错: ' + e.message;
+            }
+        }
+
+        // 发布新日记
+        async function publishToCloud() {
+            const token = getGithubToken();
+            if (!token) return;
 
             const category = document.getElementById('book-category').value;
             const title = document.getElementById('entry-title').value.trim();
@@ -82,33 +134,36 @@
                 return;
             }
 
-            alert('正在提交到 GitHub 云端，请稍候...');
-
+            alert('正在提交到 GitHub 云端...');
             const now = new Date();
             const dateStr = now.toISOString().split('T')[0];
             const newEntry = { category, title, content, date: dateStr };
 
-            const path = "data.json";
+            // 确保有最新列表
+            let entries = window.allEntries || [];
+            entries.unshift(newEntry);
+
+            await saveEntriesToCloud(entries, 'Add new diary entry');
+        }
+
+        // 删除某一篇日记
+        async function deleteEntry(index) {
+            if (!confirm('确定要永久删除这篇日记吗？')) return;
+
+            let entries = window.allEntries || [];
+            entries.splice(index, 1); // 从数组中移除这一篇
+
+            alert('正在从云端删除...');
+            await saveEntriesToCloud(entries, 'Delete diary entry');
+        }
+
+        // 公共的云端保存函数
+        async function saveEntriesToCloud(entries, message) {
+            const token = getGithubToken();
             const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${path}`;
 
             try {
-                let sha = null;
-                let existingEntries = [];
-
-                const getRes = await fetch(url, {
-                    headers: { "Authorization": `token ${token}` }
-                });
-
-                if (getRes.ok) {
-                    const fileData = await getRes.json();
-                    sha = fileData.sha;
-                    const decodedContent = decodeURIComponent(escape(atob(fileData.content)));
-                    existingEntries = JSON.parse(decodedContent);
-                }
-
-                existingEntries.unshift(newEntry);
-
-                const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(existingEntries, null, 2))));
+                const updatedContent = btoa(unescape(encodeURIComponent(JSON.stringify(entries, null, 2))));
 
                 const putRes = await fetch(url, {
                     method: "PUT",
@@ -117,28 +172,28 @@
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        message: "Add new diary entry via web admin",
+                        message: message,
                         content: updatedContent,
-                        sha: sha
+                        sha: window.currentSha
                     })
                 });
 
                 if (putRes.ok) {
-                    alert('🎉 成功同步到 GitHub 云端！');
+                    alert('🎉 操作成功！已同步更新云端。');
                     document.getElementById('entry-title').value = '';
                     document.getElementById('entry-content').value = '';
+                    loadEntriesForManage(); // 重新加载列表
                 } else {
                     const err = await putRes.json();
-                    alert('保存失败，可能 Token 不正确: ' + err.message);
-                    if(putRes.status === 401) {
-                        localStorage.removeItem('github_token'); // 鉴权失败自动清空错的token
-                    }
+                    alert('操作失败: ' + err.message);
                 }
-
             } catch (e) {
-                alert('发生错误，请检查网络: ' + e.message);
+                alert('发生错误: ' + e.message);
             }
         }
+
+        // 页面打开时自动加载
+        window.onload = loadEntriesForManage;
     </script>
 </body>
 </html>
