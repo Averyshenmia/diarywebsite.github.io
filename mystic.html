@@ -19,27 +19,44 @@
     <div class="container">
         <a href="books.html" class="back">← 返回书架</a>
         <h1>🔮 自我觉察与神秘学日记</h1>
-        <div id="list-container"></div>
+        <div id="list-container">正在从云端加载日记...</div>
     </div>
 
     <script>
-        const entries = JSON.parse(localStorage.getItem('my_diary_entries') || '[]');
-        const container = document.getElementById('list-container');
-        
-        // 筛选出神秘学分类的日记
-        const mysticEntries = entries.filter(item => item.category === 'mystic');
+        const GITHUB_USER = "averyshenmia";
+        const GITHUB_REPO = "diarywebsite.github.io";
+        const path = "data.json";
 
-        if (mysticEntries.length === 0) {
-            container.innerHTML = '<div class="empty">暂无日记，快去管理员后台写一篇吧！</div>';
-        } else {
-            container.innerHTML = mysticEntries.map(item => `
-                <div class="entry">
-                    <div class="meta">${item.date}</div>
-                    <div class="title">${item.title}</div>
-                    <div class="content">${item.content}</div>
-                </div>
-            `).join('');
+        async function loadCloudEntries() {
+            const container = document.getElementById('list-container');
+            try {
+                const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${path}?t=${Date.now()}`;
+                const res = await fetch(url);
+                
+                if (!res.ok) {
+                    container.innerHTML = '<div class="empty">暂无云端日记，快去管理员后台写一篇吧！</div>';
+                    return;
+                }
+
+                const entries = await res.json();
+                const mysticEntries = entries.filter(item => item.category === 'mystic');
+
+                if (mysticEntries.length === 0) {
+                    container.innerHTML = '<div class="empty">该分类下暂无日记。</div>';
+                } else {
+                    container.innerHTML = mysticEntries.map(item => `
+                        <div class="entry">
+                            <div class="meta">${item.date}</div>
+                            <div class="title">${item.title}</div>
+                            <div class="content">${item.content}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                container.innerHTML = '<div class="empty">加载云端数据失败，请检查网络。</div>';
+            }
         }
+        loadCloudEntries();
     </script>
 </body>
 </html>
