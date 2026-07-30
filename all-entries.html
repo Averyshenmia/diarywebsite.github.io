@@ -2,24 +2,57 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>全部日记 - 时间轴</title>
+    <title>全部日记检索</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #334155; margin: 0; padding: 40px; }
-        .container { max-width: 700px; margin: 0 auto; }
-        .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
-        .entry { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
-        .content { line-height: 1.6; color: #475569; white-space: pre-wrap; }
-        .empty { text-align: center; color: #94a3b8; margin-top: 40px; }
+        :root {
+            --bg-color: #fafaf9;
+            --text-main: #292524;
+            --text-sub: #78716c;
+            --border-color: #e7e5e4;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 60px 40px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 640px; }
+        .back { display: inline-block; margin-bottom: 40px; color: var(--text-sub); text-decoration: none; font-size: 13px; }
+        .back:hover { color: var(--text-main); }
+        h1 { font-size: 18px; font-weight: 400; letter-spacing: 1px; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+
+        /* 检索控制面板 */
+        .filter-panel { background: #fff; border: 1px solid var(--border-color); border-radius: 6px; padding: 20px; margin-bottom: 30px; display: flex; flex-direction: column; gap: 14px; }
+        .filter-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        input, select { flex: 1; min-width: 140px; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; color: var(--text-main); background: #fff; }
+        .filter-label { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; gap: 6px; }
+
+        /* 合并大文本框容器 */
+        .merged-textbox { width: 100%; height: 500px; padding: 20px; border: 1px solid var(--border-color); border-radius: 6px; background: #fff; font-size: 14px; line-height: 1.8; color: #44403c; resize: vertical; box-sizing: border-box; font-family: inherit; white-space: pre-wrap; outline: none; }
+        
+        .count-info { font-size: 12px; color: var(--text-sub); margin-bottom: 10px; }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
-        <a href="books.html" class="back">← 返回书架目录</a>
-        <h1>📑 全部日记（最新到最旧）</h1>
-        <div id="entries-container">正在从云端加载日记...</div>
+        <a href="books.html" class="back">← 返回书架</a>
+        <h1>📑 全部记录检索与合并阅读</h1>
+
+        <div class="filter-panel">
+            <div class="filter-row">
+                <input type="text" id="keywordInput" placeholder="输入关键词搜索标题或正文..." oninput="filterAndRender()">
+                <select id="categorySelect" onchange="filterAndRender()">
+                    <option value="all">全部分类</option>
+                    <option value="mystic">🔮 神秘学</option>
+                    <option value="daily">📝 日常手帐</option>
+                </select>
+            </div>
+            <div class="filter-row">
+                <div class="filter-label">开始时间: <input type="date" id="startDate" onchange="filterAndRender()"></div>
+                <div class="filter-label">结束时间: <input type="date" id="endDate" onchange="filterAndRender()"></div>
+            </div>
+        </div>
+
+        <div class="count-info" id="countInfo">正在加载...</div>
+        
+        <!-- 合并显示的大文本框 -->
+        <textarea class="merged-textbox" id="mergedContent" readonly placeholder="满足条件的日记内容将全部合并展示在这里..."></textarea>
     </div>
 
     <script>
@@ -27,38 +60,60 @@
         const GITHUB_REPO = "diarywebsite.github.io";
         const path = "data.json";
 
-        async function loadCloudEntries() {
-            const container = document.getElementById('entries-container');
+        let allEntries = [];
+
+        async function init() {
             try {
                 const url = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${path}?t=${Date.now()}`;
                 const res = await fetch(url);
-                
-                if (!res.ok) {
-                    container.innerHTML = '<div class="empty">暂无任何云端日记内容。</div>';
-                    return;
-                }
-
-                const entries = await res.json();
-
-                if (entries.length === 0) {
-                    container.innerHTML = '<div class="empty">暂无任何日记内容。</div>';
-                } else {
-                    container.innerHTML = entries.map(item => `
-                        <div class="entry">
-                            <div class="meta">
-                                <span>${item.category === 'mystic' ? '🔮 神秘学日记' : '📝 日常手帐'}</span>
-                                <span>${item.date}</span>
-                            </div>
-                            <div class="title">${item.title}</div>
-                            <div class="content">${item.content}</div>
-                        </div>
-                    `).join('');
-                }
+                if (!res.ok) throw new Error();
+                allEntries = await res.json();
+                filterAndRender();
             } catch (e) {
-                container.innerHTML = '<div class="empty">加载云端数据失败，请检查网络。</div>';
+                document.getElementById('countInfo').innerText = '加载云端数据失败';
             }
         }
-        loadCloudEntries();
+
+        function filterAndRender() {
+            const keyword = document.getElementById('keywordInput').value.trim().toLowerCase();
+            const category = document.getElementById('categorySelect').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const filtered = allEntries.filter(item => {
+                // 分类筛选
+                if (category !== 'all' && item.category !== category) return false;
+                
+                // 关键词筛选（匹配标题或正文）
+                if (keyword) {
+                    const matchTitle = item.title && item.title.toLowerCase().includes(keyword);
+                    const matchContent = item.content && item.content.toLowerCase().includes(keyword);
+                    if (!matchTitle && !matchContent) return false;
+                }
+
+                // 时间范围筛选（item.date 格式为 "YYYY-MM-DD HH:mm" 或 "YYYY-MM-DD"）
+                if (startDate || endDate) {
+                    const itemDateStr = item.date.split(' ')[0]; // 取出年月日部分
+                    if (startDate && itemDateStr < startDate) return false;
+                    if (endDate && itemDateStr > endDate) return false;
+                }
+
+                return true;
+            });
+
+            // 更新计数提示
+            document.getElementById('countInfo').innerText = `检索到 ${filtered.length} 篇符合条件的记录`;
+
+            // 合并成一个大文本串
+            const combinedText = filtered.map(item => {
+                const catName = item.category === 'mystic' ? '【神秘学】' : '【日常手帐】';
+                return `${catName} ${item.title}\n时间：${item.date}\n----------------------------------------\n${item.content}\n\n\n`;
+            }).join('');
+
+            document.getElementById('mergedContent').value = combinedText || '没有找到符合条件的记录。';
+        }
+
+        init();
     </script>
 </body>
 </html>
