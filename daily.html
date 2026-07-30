@@ -10,7 +10,8 @@
         .entry { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #6366f1; }
         .meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
         .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
-        .content { line-height: 1.6; color: #475569; }
+        .content { line-height: 1.6; color: #475569; white-space: pre-wrap; }
+        .empty { text-align: center; color: #94a3b8; margin-top: 40px; }
     </style>
     <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
@@ -18,11 +19,27 @@
     <div class="container">
         <a href="books.html" class="back">← 返回书架</a>
         <h1>📝 日常生活手帐</h1>
-        <div class="entry">
-            <div class="meta">2026-07-29</div>
-            <div class="title">夏日居家琐碎日常</div>
-            <div class="content">这里是你的日常生活手帐分类。</div>
-        </div>
+        <div id="list-container"></div>
     </div>
+
+    <script>
+        const entries = JSON.parse(localStorage.getItem('my_diary_entries') || '[]');
+        const container = document.getElementById('list-container');
+        
+        // 筛选出日常手帐分类的日记
+        const dailyEntries = entries.filter(item => item.category === 'daily');
+
+        if (dailyEntries.length === 0) {
+            container.innerHTML = '<div class="empty">暂无日记，快去管理员后台写一篇吧！</div>';
+        } else {
+            container.innerHTML = dailyEntries.map(item => `
+                <div class="entry">
+                    <div class="meta">${item.date}</div>
+                    <div class="title">${item.title}</div>
+                    <div class="content">${item.content}</div>
+                </div>
+            `).join('');
+        }
+    </script>
 </body>
 </html>
