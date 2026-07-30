@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>全部日记 - 时间轴</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f8fafc; color: #334155; margin: 0; padding: 40px; }
+        .container { max-width: 700px; margin: 0 auto; }
+        .back { display: inline-block; margin-bottom: 20px; color: #6366f1; text-decoration: none; }
+        .entry { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
+        .content { line-height: 1.6; color: #475569; }
+    </style>
+    <script>
+        if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <a href="books.html" class="back">← 返回书架目录</a>
+        <h1>📑 全部日记（最新到最旧）</h1>
+        
+        <div id="entries-container">
+            <div class="entry">
+                <div class="meta"><span>🔮 神秘学日记</span><span>2026-07-29</span></div>
+                <div class="title">关于近期状态的塔罗牌复盘</div>
+                <div class="content">这里是日记的具体正文内容，按照最新到最旧的顺序排列。</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
