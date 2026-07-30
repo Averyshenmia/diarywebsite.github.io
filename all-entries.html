@@ -10,24 +10,36 @@
         .entry { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .meta { font-size: 12px; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; }
         .title { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
-        .content { line-height: 1.6; color: #475569; }
+        .content { line-height: 1.6; color: #475569; white-space: pre-wrap; }
+        .empty { text-align: center; color: #94a3b8; margin-top: 40px; }
     </style>
-    <script>
-        if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }
-    </script>
+    <script>if (sessionStorage.getItem("isAuth") !== "true") { window.location.href = "index.html"; }</script>
 </head>
 <body>
     <div class="container">
         <a href="books.html" class="back">← 返回书架目录</a>
         <h1>📑 全部日记（最新到最旧）</h1>
-        
-        <div id="entries-container">
-            <div class="entry">
-                <div class="meta"><span>🔮 神秘学日记</span><span>2026-07-29</span></div>
-                <div class="title">关于近期状态的塔罗牌复盘</div>
-                <div class="content">这里是日记的具体正文内容，按照最新到最旧的顺序排列。</div>
-            </div>
-        </div>
+        <div id="entries-container"></div>
     </div>
+
+    <script>
+        const entries = JSON.parse(localStorage.getItem('my_diary_entries') || '[]');
+        const container = document.getElementById('entries-container');
+
+        if (entries.length === 0) {
+            container.innerHTML = '<div class="empty">暂无任何日记内容。</div>';
+        } else {
+            container.innerHTML = entries.map(item => `
+                <div class="entry">
+                    <div class="meta">
+                        <span>${item.category === 'mystic' ? '🔮 神秘学日记' : '📝 日常手帐'}</span>
+                        <span>${item.date}</span>
+                    </div>
+                    <div class="title">${item.title}</div>
+                    <div class="content">${item.content}</div>
+                </div>
+            `).join('');
+        }
+    </script>
 </body>
 </html>
